@@ -3,7 +3,12 @@ const Category = require('../models/Category')
 const getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find()
-    return res.status(200).json({ categories })
+    console.log('Fetched categories:', categories)
+    return res.status(200).json({
+      data: {
+        categories,
+      },
+    })
   } catch (err) {
     console.log(err)
     return res.status(500).json({ message: 'Internal server error' })
@@ -17,7 +22,11 @@ const getCategoryById = async (req, res) => {
     if (!category) {
       return res.status(404).json({ message: 'Category not found' })
     }
-    return res.status(200).json({ category })
+    return res.status(200).json({
+      data: {
+        category,
+      },
+    })
   } catch (err) {
     console.log(err)
     return res.status(500).json({ message: 'Internal server error' })
