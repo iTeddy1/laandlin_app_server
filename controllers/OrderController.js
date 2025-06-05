@@ -5,52 +5,24 @@ const Order = require('../models/Order')
 const Product = require('../models/Product')
 
 const createOrder = async (req, res) => {
-  const { items, address, description, totalItems, mobile, totalDiscount, paymentMethod } = req.body
+  const { address, description, mobile, totalDiscount, paymentMethod, cart, totalPrice } = req.body
   if (!address) {
     return res.status(400).json({ error: 'Address is required' })
   }
-  const orderItems = await Promise.all(
-    items.map(async item => {
-      if (!item.productId) {
-        return res.status(400).json({ error: 'Product id is required' })
-      }
-      if (!item.color) {
-        return res.status(400).json({ error: 'Color is required' })
-      }
-      if (!item.quantity) {
-        return res.status(400).json({ error: 'Quantity is required' })
-      }
-      const product = await Product.findById(item.productId).populate('category')
 
-      if (!product) {
-        return res.status(404).json({ error: `Product with id ${item.product} not found` })
-      }
-      return {
-        productId: item.productId,
-        quantity: item.quantity,
-        price: product.sizes.find(size => size.size === item.size)?.price || product.price,
-        salePrice:
-          product.sizes.find(size => size.size === item.size)?.salePrice || product.salePrice,
-        product: item.product,
-        color: item.color,
-        size: item.size,
-        category: product.category.name,
-        name: product.name,
-        slug: product.slug,
-      }
-    })
-  )
   const orderDate = moment().tz('Asia/Bangkok').toDate()
   const dueOrderDate = moment(orderDate).add(1, 'day').toDate()
 
   try {
     const order = new Order({
       user: req.userId,
-      items: orderItems,
+      items: cart,
       address,
       orderDate,
       description,
       mobile,
+      totalAmount: totalPrice,
+      finalAmount: totalPrice,
       paymentMethod: paymentMethod || 'Pay online',
     })
     await order.save()
@@ -64,7 +36,12 @@ const createOrder = async (req, res) => {
       }
     })
 
-    res.status(201).json(order)
+    res.status(201).json({
+      data: {
+        message: 'Order created successfully',
+        order,
+      },
+    })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
