@@ -16,8 +16,6 @@ const productSchema = new Schema({
     {
       id: { type: String, required: true },
       hashCode: { type: String, required: true },
-      images: { type: Array, required: true },
-      imageUrl: { type: String, required: true },
     },
   ],
   weight: { type: Number, required: true },

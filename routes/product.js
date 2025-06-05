@@ -13,12 +13,7 @@ router.get('/category/:name', controller.getProductsByCategory)
 router.get('/sizes', controller.getAllSizes)
 router.get('/colors', controller.getAllColors)
 router.get('/sku/:sku', controller.getProductBySKU)
-router.get(
-  '/low-stock',
-  validateToken,
-  verifyRoles(['admin', 'manager']),
-  controller.getLowStockProducts
-)
+
 router.get('/slug/:slug', controller.getProductBySlug)
 
 router.get('/related/:productId', controller.getRelatedProducts)

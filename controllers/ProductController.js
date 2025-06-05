@@ -1,6 +1,5 @@
 const Category = require('../models/Category')
 const Product = require('../models/Product')
-// const Tag = require('../models/Tag')
 
 const DEFAULT_LIMIT = 30
 
