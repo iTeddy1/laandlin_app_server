@@ -2,16 +2,12 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const bannerSchema = new Schema({
-  image: {
-    type: String,
+  banners: {
+    type: Array,
     required: true,
   },
-  title: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
+  sliders: {
+    type: Array,
     required: true,
   },
 })

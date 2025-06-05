@@ -1,128 +1,104 @@
-const Category = require('../models/Category')
+const mongoose = require('mongoose')
+
 const Product = require('../models/Product')
 
 const DEFAULT_LIMIT = 30
 
 const getPagination = (page, limit) => {
-  const pageNumber = +page || 1
-  const limitNumber = +limit || DEFAULT_LIMIT
+  const limitNumber = parseInt(limit, 10) || DEFAULT_LIMIT
+  const pageNumber = parseInt(page, 10) || 1
   const skip = (pageNumber - 1) * limitNumber
-  return { skip, limitNumber, page: pageNumber }
+  return { skip, limitNumber }
 }
 
 const applySort = (a, b, sort) => {
-  switch (sort) {
-    case 'price-asc':
-      return a.price - b.price
-    case 'price-desc':
-      return b.price - a.price
-    case 'sale-desc':
-      return b.price - b.salePrice - (a.price - a.salePrice)
-    case 'best-selling':
-      return b.sold - a.sold
-    case 'newest':
-      return new Date(b.createdAt) - new Date(a.createdAt)
-    default:
-      return 0
-  }
-}
-
-const applyFilter = async (products, filter) => {
-  let { minPrice, maxPrice, category, status, availability, colors, sizes } = filter
-  // tags = tags?.split(',')
-  colors = colors?.split(',')
-  sizes = sizes?.split(',')
-  colors = colors?.map(color => `#${color}`)
-  availability = availability
-    ?.split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-  try {
-    const categoryId = await Category.findOne({ name: category })
-    // const tagIds = await Tag.find({ name: { $in: tags } }).select('_id')
-    return products.filter(product => {
-      if (minPrice && product.salePrice < minPrice) {
-        return false
-      }
-      if (maxPrice && product.salePrice > maxPrice) {
-        return false
-      }
-      if (categoryId && product.category !== categoryId) {
-        return false
-      }
-      if (status && product.status !== status) {
-        return false
-      }
-      if (availability && product.availability !== availability) {
-        return false
-      }
-      if (colors) {
-        let colorMatch = false
-        colors.forEach(color => {
-          if (product.colors.some(productColor => productColor.color === color)) {
-            colorMatch = true
-          }
-        })
-        if (!colorMatch) return false
-      }
-      if (sizes) {
-        let sizeMatch = false
-        sizes.forEach(size => {
-          if (product.sizes.some(productSize => productSize.size === size)) {
-            sizeMatch = true
-          }
-        })
-        if (!sizeMatch) return false
-      }
-      return true
-    })
-    // eslint-disable-next-line no-unused-vars
-  } catch (err) {
-    return []
-  }
+  if (sort === 'price-asc') return a.price - b.price
+  if (sort === 'price-desc') return b.price - a.price
+  return a.name.localeCompare(b.name) // Default: sort by name
 }
 
 const getAllProducts = async (req, res) => {
-  const { page, limit, sort, query } = req.query
-  const filter = {
-    minPrice: req.query.min,
-    maxPrice: req.query.max,
-    category: req.query.category,
-    collection: req.query.collection,
-    status: req.query.status,
-    availability: req.query.availability,
-    sizes: req.query.sizes,
-    colors: req.query.colors,
-  }
-  // console.log(filter)
+  const {
+    page,
+    limit,
+    sort,
+    query,
+    category,
+    min,
+    maxPrice,
+    collection,
+    status,
+    availability,
+    sizes,
+    colors,
+  } = req.query
+
   try {
     const { skip, limitNumber } = getPagination(page, limit)
-    const products = await Product.find(
-      query ? { name: { $regex: query, $options: 'i' } } : {}
-    ).populate('category')
+    const mongoQuery = {}
+    if (query) {
+      mongoQuery.name = { $regex: query, $options: 'i' }
+    }
+    if (category) {
+      // Support single ID or comma-separated IDs
+      const categoryIds = category.split(',').filter(id => mongoose.isValidObjectId(id))
+      if (categoryIds.length > 0) {
+        mongoQuery.category = { $in: categoryIds }
+      }
+    }
+    if (min) {
+      mongoQuery.price = { ...mongoQuery.price, $gte: parseFloat(min) }
+    }
+    if (maxPrice) {
+      mongoQuery.price = { ...mongoQuery.price, $lte: parseFloat(maxPrice) }
+    }
+    if (collection) {
+      mongoQuery.collection = collection
+    }
+    if (status) {
+      mongoQuery.status = status
+    }
+    if (availability) {
+      mongoQuery.availability = availability === 'true'
+    }
+    if (sizes) {
+      mongoQuery.sizes = { $in: sizes.split(',') }
+    }
+    if (colors) {
+      mongoQuery.colors = { $in: colors.split(',') }
+    }
 
-    let filteredProducts = products.sort((a, b) => applySort(a, b, sort))
-    filteredProducts = await applyFilter(filteredProducts, filter)
-    const totalPage = Math.ceil(filteredProducts.length / limitNumber)
-    const totalProducts = await Product.countDocuments(query)
-    filteredProducts = filteredProducts.slice(skip, skip + limitNumber)
+    // Fetch products
+    const products = await Product.find(mongoQuery)
+      .populate('category')
+      .sort(
+        sort ? { price: sort === 'price-asc' ? 1 : sort === 'price-desc' ? -1 : 1 } : { name: 1 }
+      )
+      .skip(skip)
+      .limit(limitNumber)
+
+    // Count total products for pagination
+    const totalProducts = await Product.countDocuments(mongoQuery)
+    const totalPage = Math.ceil(totalProducts / limitNumber)
 
     const pagination = {
       currentPage: +page || 1,
-      nextPage: +page + 1,
-      previousPage: +page - 1,
-      hasNextPage: filteredProducts.length > skip + limitNumber,
+      nextPage: totalProducts > skip + limitNumber ? +page + 1 : null,
+      previousPage: skip > 0 ? +page - 1 : null,
+      hasNextPage: totalProducts > skip + limitNumber,
       hasPreviousPage: skip > 0,
       lastPage: totalPage,
     }
+
     res.status(200).json({
       data: {
-        products: filteredProducts,
+        products,
         pagination,
-        productLength: totalProducts,
+        productsLength: totalProducts,
       },
     })
   } catch (err) {
+    console.error('Error fetching products:', err)
     res.status(500).json({ message: err.message })
   }
 }
@@ -136,9 +112,18 @@ const getProductById = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' })
     }
 
+    const similarProducts = await Product.find({
+      _id: { $ne: id }, // Exclude current product
+      category: product.category._id, // Same category
+    })
+      .populate('category')
+      .sort({ price: 1 }) // Sort by price
+      .limit(6)
+
     res.status(200).json({
       data: {
         product,
+        similarProducts,
       },
     })
   } catch (err) {
@@ -280,42 +265,6 @@ const deleteManyProducts = async (req, res) => {
   }
 }
 
-const getProductsByCategory = async (req, res) => {
-  const { name } = req.params
-  const { page, limit, sort } = req.query
-  const filter = {
-    minPrice: req.query.min,
-    maxPrice: req.query.max,
-    category: req.query.category,
-    tags: req.query.tags,
-    collection: req.query.collection,
-    status: req.query.status,
-    availability: req.query.availability,
-    sizes: req.query.sizes,
-    colors: req.query.colors,
-  }
-  try {
-    const { skip, limitNumber } = getPagination(page, limit)
-    const categoryId = await Category.findOne({ name })
-
-    if (!categoryId) {
-      return res.status(404).json({ message: 'Category not found' })
-    }
-    const products = await Product.find({ category: categoryId })
-      .limit(limitNumber)
-      .skip(skip)
-      .populate('category')
-
-    const totalPage = Math.ceil((await Product.countDocuments({ category: categoryId })) / limit)
-    let filteredProducts = products.sort((a, b) => applySort(a, b, sort))
-    filteredProducts = await applyFilter(filteredProducts, filter)
-
-    res.status(200).json({ products: filteredProducts, totalPage })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
 const getAllSizes = async (req, res) => {
   try {
     const sizes = await Product.distinct('sizes.size')
@@ -338,23 +287,6 @@ const getProductBySKU = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' })
     }
     res.status(200).json({ product })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getProductsByStatus = async (req, res) => {
-  const { status, page, limit, sort } = req.query
-  try {
-    const { skip, limitNumber } = getPagination(page, limit)
-    const products = await Product.find({ status })
-      .limit(limitNumber)
-      .skip(skip)
-      .populate('category')
-
-    const totalPage = Math.ceil((await Product.countDocuments({ status })) / limit)
-
-    res.status(200).json({ products: products.sort((a, b) => applySort(a, b, sort)), totalPage })
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -479,9 +411,7 @@ module.exports = {
   addProduct,
   updateProduct,
   deleteProduct,
-  getProductsByCategory,
   getProductBySKU,
-  getProductsByStatus,
   getProductsByPriceRange,
   getRecentlyAddedProducts,
   getPopularProducts,

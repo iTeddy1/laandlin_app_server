@@ -129,7 +129,7 @@ const getUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { name, email, mobile, address } = req.body
-    console.log(req.body)
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       { name, email, mobile, address },
@@ -148,26 +148,6 @@ const updateUser = async (req, res) => {
     })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-const updateProfile = async (req, res) => {
-  try {
-    const { name, phone } = req.body
-    const user = await User.findByIdAndUpdate(req.userId, { name, phone }, { new: true })
-    res.status(200).json({
-      message: 'Profile updated',
-      user: {
-        userId: user._id,
-        name: user.name,
-        email: user.email,
-        addresses: user.addresses,
-        phone: user.phone,
-        role: user.role,
-      },
-    })
-  } catch (err) {
     res.status(500).json({ message: 'Internal server error' })
   }
 }
@@ -197,45 +177,6 @@ const updatePassword = async (req, res) => {
         role: user.role,
       },
     })
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-const updateAddress = async (req, res) => {
-  try {
-    const { addressId, fullName, phoneNumber, country, state, city, county, address, isDefault } =
-      req.body
-    const newAddress = {
-      _id: addressId,
-      fullName,
-      phoneNumber,
-      country,
-      state,
-      city,
-      county,
-      address,
-      isDefault,
-    }
-    const user = await User.findById(req.userId)
-    const addresses = user.addresses
-    const index = addresses.findIndex(address => address._id == addressId)
-    if (index === -1) return res.status(404).json({ message: 'Address not found' })
-    addresses[index] = newAddress
-    if (isDefault) {
-      addresses.forEach(address => {
-        address.isDefault = address._id == addressId
-      })
-      ;[addresses[0], addresses[index]] = [addresses[index], addresses[0]]
-    } else {
-      addresses[index].isDefault = false
-      const hasDefault = addresses.some(address => address.isDefault)
-      if (!hasDefault) {
-        addresses[0].isDefault = true
-      }
-    }
-    await User.findByIdAndUpdate(req.userId, { addresses })
-    res.status(200).json({ message: 'Address updated', address: newAddress })
   } catch (err) {
     res.status(500).json({ message: 'Internal server error' })
   }
@@ -427,9 +368,7 @@ module.exports = {
   // forgotPassword,
   resetPassword,
   getUser,
-  updateProfile,
   updatePassword,
-  updateAddress,
   googleLogin,
   updateUser,
   deleteAddress,

@@ -3,7 +3,12 @@ const Banner = require('../models/Banner')
 const getAllBanners = async (req, res) => {
   try {
     const banners = await Banner.find()
-    res.status(200).json(banners)
+    const bannerOneType = banners.slice(0, 4)
+    const bannerTwoType = banners.slice(4, 8)
+    res.status(200).json({
+      data: { bannerOneType, bannerTwoType },
+      message: 'Banners fetched successfully',
+    })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -20,13 +25,10 @@ const getBannerById = async (req, res) => {
 }
 
 const addBanner = async (req, res) => {
-  const { title, description, image } = req.body
-  if (!title || !description || !image)
-    return res.status(400).json({ message: 'Please fill in all fields' })
+  const { image } = req.body
+  if (!image) return res.status(400).json({ message: 'Please fill in all fields' })
   try {
     const newBanner = await Banner.create({
-      title,
-      description,
       image,
     })
     res.status(201).json({ message: 'Banner added', banner: newBanner })

@@ -1,12 +1,11 @@
 const moment = require('moment-timezone')
 const schedule = require('node-schedule')
 
-const Discount = require('../models/Discount')
 const Order = require('../models/Order')
 const Product = require('../models/Product')
 
 const createOrder = async (req, res) => {
-  const { items, discountCode, address, description } = req.body
+  const { items, address, description, totalItems, mobile, totalDiscount, paymentMethod } = req.body
   if (!address) {
     return res.status(400).json({ error: 'Address is required' })
   }
@@ -21,17 +20,17 @@ const createOrder = async (req, res) => {
       if (!item.quantity) {
         return res.status(400).json({ error: 'Quantity is required' })
       }
-      const product = await Product.findById(item.productId).populate('category').populate('tags')
-      console.log(product)
+      const product = await Product.findById(item.productId).populate('category')
+
       if (!product) {
         return res.status(404).json({ error: `Product with id ${item.product} not found` })
       }
       return {
         productId: item.productId,
         quantity: item.quantity,
-        price: product.sizes.find(size => size.size == item.size)?.price || product.price,
+        price: product.sizes.find(size => size.size === item.size)?.price || product.price,
         salePrice:
-          product.sizes.find(size => size.size == item.size)?.salePrice || product.salePrice,
+          product.sizes.find(size => size.size === item.size)?.salePrice || product.salePrice,
         product: item.product,
         color: item.color,
         size: item.size,
@@ -41,16 +40,6 @@ const createOrder = async (req, res) => {
       }
     })
   )
-
-  let discountAmount = 0
-  const totalAmount = orderItems.reduce((total, item) => total + item.salePrice * item.quantity, 0)
-  if (discountCode) {
-    const discount = await Discount.findOne({ code: discountCode })
-    if (!discount) {
-      return res.status(404).json({ error: 'Discount code not found' })
-    }
-    discountAmount = (totalAmount * discount.percentage) / 100
-  }
   const orderDate = moment().tz('Asia/Bangkok').toDate()
   const dueOrderDate = moment(orderDate).add(1, 'day').toDate()
 
@@ -58,13 +47,11 @@ const createOrder = async (req, res) => {
     const order = new Order({
       user: req.userId,
       items: orderItems,
-      totalAmount,
-      discountAmount,
-      discountCode,
-      finalAmount: totalAmount - discountAmount,
       address,
       orderDate,
       description,
+      mobile,
+      paymentMethod: paymentMethod || 'Pay online',
     })
     await order.save()
 

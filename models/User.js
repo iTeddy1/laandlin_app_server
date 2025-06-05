@@ -16,7 +16,7 @@ const userSchema = new Schema({
     city: { type: String },
     state: { type: String },
     country: { type: String },
-    isDefault: { type: Boolean },
+    postalCode: { type: String },
   },
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
