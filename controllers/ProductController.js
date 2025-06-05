@@ -48,15 +48,6 @@ const applyFilter = async (products, filter) => {
       if (maxPrice && product.salePrice > maxPrice) {
         return false
       }
-      // if (tags) {
-      //   let tagMatch = false
-      //   product.tags.forEach(productTag => {
-      //     if (tagIds.some(tagId => tagId.equals(productTag._id))) {
-      //       tagMatch = true
-      //     }
-      //   })
-      //   if (!tagMatch) return false
-      // }
       if (categoryId && product.category !== categoryId) {
         return false
       }
@@ -162,6 +153,9 @@ const addProduct = async (req, res) => {
     price,
     salePrice,
     stockQuantity,
+    images,
+    discount,
+    rating,
     colors,
     category,
     tags,
@@ -185,6 +179,9 @@ const addProduct = async (req, res) => {
       description,
       price,
       salePrice,
+      images,
+      discount,
+      rating,
       stockQuantity,
       category,
       tags,
@@ -341,34 +338,10 @@ const getAllSizes = async (req, res) => {
   }
 }
 
-const getProductsByCollection = async (req, res) => {
-  const { collectionId } = req.params
-  const { page, limit, sort } = req.query
-  try {
-    const { skip, limitNumber } = getPagination(page, limit)
-    const products = await Product.find({ collection: collectionId })
-      .limit(limitNumber)
-      .skip(skip)
-      .populate('collection')
-      .populate('category')
-
-    const totalPage = Math.ceil(
-      (await Product.countDocuments({ collection: collectionId })) / limit
-    )
-
-    res.status(200).json({ products: products.sort((a, b) => applySort(a, b, sort)), totalPage })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
 const getProductBySKU = async (req, res) => {
   const { sku } = req.params
   try {
-    const product = await Product.findOne({ sku })
-      .populate('category')
-      .populate('collection')
-      .populate('tags')
+    const product = await Product.findOne({ sku }).populate('category')
     if (!product) {
       return res.status(404).json({ message: 'Product not found' })
     }
@@ -386,8 +359,6 @@ const getProductsByStatus = async (req, res) => {
       .limit(limitNumber)
       .skip(skip)
       .populate('category')
-      .populate('collection')
-      .populate('tags')
 
     const totalPage = Math.ceil((await Product.countDocuments({ status })) / limit)
 
@@ -441,8 +412,6 @@ const getPopularProducts = async (req, res) => {
       .limit(limitNumber)
       .skip(skip)
       .populate('category')
-      .populate('collection')
-      .populate('tags')
 
     const totalPage = Math.ceil((await Product.countDocuments({ _id: { $ne: productId } })) / limit)
 
@@ -477,8 +446,6 @@ const getRelatedProducts = async (req, res) => {
       .skip(skip)
       .sort({ sold: -1 })
       .populate('category')
-      .populate('collection')
-      .populate('tags')
 
     if (relatedProducts.length === 0) {
       return res.status(404).json({ message: 'Related products not found' })
@@ -491,29 +458,10 @@ const getRelatedProducts = async (req, res) => {
   }
 }
 
-const getLowStockProducts = async (req, res) => {
-  const { threshold, page, limit } = req.query
-  try {
-    const { skip, limitNumber } = getPagination(page, limit)
-    const products = await Product.find({ stockQuantity: { $lte: threshold } })
-      .limit(limitNumber)
-      .skip(skip)
-      .populate('category')
-      .populate('collection')
-      .populate('tags')
-    res.status(200).json({ products })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
 const getProductBySlug = async (req, res) => {
   const { slug } = req.params
   try {
-    const product = await Product.findOne({ slug })
-      .populate('category')
-      .populate('collection')
-      .populate('tags')
+    const product = await Product.findOne({ slug }).populate('category')
     if (!product) {
       return res.status(404).json({ message: 'Product not found' })
     }
@@ -547,7 +495,6 @@ module.exports = {
   getProductsByPriceRange,
   getRecentlyAddedProducts,
   getPopularProducts,
-  getLowStockProducts,
   deleteManyProducts,
   getProductBySlug,
   getAllSizes,

@@ -7,6 +7,11 @@ const productSchema = new Schema({
   price: { type: Number, required: true },
   salePrice: { type: Number },
   stockQuantity: { type: Number, required: true },
+  images: [
+    {
+      url: { type: String, required: true },
+    },
+  ],
   colors: [
     {
       id: { type: String, required: true },
@@ -34,6 +39,7 @@ const productSchema = new Schema({
   availability: { type: String, required: true },
   rating: { type: Number, default: 0 },
   numReviews: { type: Number, default: 0 },
+  discount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 })
