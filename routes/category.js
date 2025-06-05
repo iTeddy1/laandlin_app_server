@@ -11,12 +11,7 @@ router.patch(
   verifyRoles(['admin', 'manager']),
   controller.updateCategory
 )
-router.delete(
-  '/name/:name',
-  validateToken,
-  verifyRoles(['admin', 'manager']),
-  controller.deleteCategory
-)
+router.delete('/:id', validateToken, verifyRoles(['admin', 'manager']), controller.deleteCategory)
 router.get('/:id', controller.getCategoryById)
 router.post('/', validateToken, verifyRoles(['admin', 'manager']), controller.addCategory)
 router.get('/', controller.getAllCategories)

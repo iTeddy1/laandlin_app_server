@@ -76,6 +76,7 @@ const applyFilter = async (products, filter) => {
       }
       return true
     })
+    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     return []
   }
@@ -248,10 +249,7 @@ const updateProduct = async (req, res) => {
         updatedAt,
       },
       { new: true }
-    )
-      .populate('category')
-      .populate('collection')
-      .populate('tags')
+    ).populate('category')
 
     res.status(200).json({ message: 'Product updated', product: updatedProduct })
   } catch (err) {
@@ -262,10 +260,7 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
   const { id } = req.params
   try {
-    const deletedProduct = await Product.findByIdAndDelete(id)
-      .populate('category')
-      .populate('collection')
-      .populate('tags')
+    const deletedProduct = await Product.findByIdAndDelete(id).populate('category')
     if (!deletedProduct) {
       return res.status(404).json({ message: 'Product not found' })
     }
@@ -310,8 +305,6 @@ const getProductsByCategory = async (req, res) => {
       .limit(limitNumber)
       .skip(skip)
       .populate('category')
-      .populate('collection')
-      .populate('tags')
 
     const totalPage = Math.ceil((await Product.countDocuments({ category: categoryId })) / limit)
     let filteredProducts = products.sort((a, b) => applySort(a, b, sort))
@@ -394,8 +387,6 @@ const getRecentlyAddedProducts = async (req, res) => {
       .limit(limitNumber)
       .skip(skip)
       .populate('category')
-      .populate('collection')
-      .populate('tags')
     res.status(200).json({ products })
   } catch (err) {
     res.status(500).json({ message: err.message })

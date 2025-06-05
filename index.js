@@ -31,11 +31,9 @@ app.use(bodyParser.json())
 app.use('/api/products', require('./routes/product'))
 app.use('/api/users', require('./routes/user'))
 app.use('/api/carts', require('./routes/cart'))
-app.use('/api/wishlists', require('./routes/wishlist'))
 // app.use('/api/tags', require('./routes/tag'))
 app.use('/api/categories', require('./routes/category'))
 app.use('/api/images', require('./routes/image'))
-app.use('/api/discounts', require('./routes/discount'))
 app.use('/api/reviews', require('./routes/review'))
 
 app.use('/', (req, res) => {
