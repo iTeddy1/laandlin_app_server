@@ -38,6 +38,6 @@ router.patch('/:id', validateToken, reviewController.updateReview)
 router.delete('/', validateToken, reviewController.deleteReview)
 
 router.post('/', validateToken, reviewController.addReview)
-router.get('/', validateToken, verifyRoles(['admin', 'manager']), reviewController.getAllReviews)
+router.get('/', validateToken, reviewController.getAllReviews)
 
 module.exports = router

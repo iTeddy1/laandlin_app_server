@@ -1,4 +1,3 @@
-const Order = require('../models/Order')
 const Review = require('../models/Review')
 
 const addReview = async (req, res) => {
@@ -12,11 +11,6 @@ const addReview = async (req, res) => {
     if (existingReview) {
       return res.status(400).json({ message: 'Review already exists' })
     }
-
-    const order = await Order.findOne({ userId, productId })
-    // if (!order) {
-    //   return res.status(400).json({ message: 'You must purchase the product before reviewing' })
-    // }
 
     const newReview = await Review.create({
       user: userId,
