@@ -32,6 +32,7 @@ router.get(
   verifyRoles(['admin', 'manager']),
   reviewController.getAllVerifiedReviews
 )
+router.get('/user/', validateToken, reviewController.getReviewsByUserId)
 
 router.get('/:id', validateToken, verifyRoles(['admin', 'manager']), reviewController.getReviewById)
 router.patch('/:id', validateToken, reviewController.updateReview)

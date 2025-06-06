@@ -89,6 +89,18 @@ const getReviewByProductId = async (req, res) => {
   }
 }
 
+const getReviewsByUserId = async (req, res) => {
+  const userId = req.userId
+  try {
+    const reviews = await Review.find({ user: userId })
+      .populate('user', 'username email phone')
+      .populate('product', 'name slug')
+    res.status(200).json({ data: { message: 'Reviews retrieved successfully', reviews } })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
+
 // Update a review
 const updateReview = async (req, res) => {
   try {
@@ -164,6 +176,7 @@ module.exports = {
   deleteReview,
   getAllVerifiedReviews,
   getAllUnverifiedReviews,
+  getReviewsByUserId,
   verifyManyReviews,
   getVerifiedReviewsByProductId,
   getUnverifiedReviewsByProductId,
