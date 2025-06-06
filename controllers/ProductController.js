@@ -14,7 +14,7 @@ const getPagination = (page, limit) => {
 const applySort = (a, b, sort) => {
   if (sort === 'price-asc') return a.price - b.price
   if (sort === 'price-desc') return b.price - a.price
-  return a.name.localeCompare(b.name) // Default: sort by name
+  return a.name.localeCompare(b.name)
 }
 
 const getAllProducts = async (req, res) => {

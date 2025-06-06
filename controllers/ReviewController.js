@@ -18,7 +18,13 @@ const addReview = async (req, res) => {
     //   return res.status(400).json({ message: 'You must purchase the product before reviewing' })
     // }
 
-    const newReview = await Review.create({ userId, productId, title, rating, comment })
+    const newReview = await Review.create({
+      user: userId,
+      product: productId,
+      title,
+      rating,
+      comment,
+    })
     res.status(201).json({ message: 'Review added successfully', newReview })
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -77,6 +83,7 @@ const getReviewById = async (req, res) => {
 
 const getReviewByProductId = async (req, res) => {
   const { productId } = req.params
+  console.log('Product ID:', productId)
   try {
     const reviews = await Review.find({ product: productId })
       .populate('user', 'username email phone')
