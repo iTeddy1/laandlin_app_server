@@ -2,10 +2,9 @@ const moment = require('moment-timezone')
 const schedule = require('node-schedule')
 
 const Order = require('../models/Order')
-const Product = require('../models/Product')
 
 const createOrder = async (req, res) => {
-  const { address, description, mobile, totalDiscount, paymentMethod, cart, totalPrice } = req.body
+  const { address, description, mobile, paymentMethod, cart, totalPrice } = req.body
   if (!address) {
     return res.status(400).json({ error: 'Address is required' })
   }
