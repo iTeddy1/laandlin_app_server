@@ -119,10 +119,5 @@ module.exports = {
   getReviewByProductId,
   updateReview,
   deleteReview,
-  getAllVerifiedReviews,
-  getAllUnverifiedReviews,
   getReviewsByUserId,
-  verifyManyReviews,
-  getVerifiedReviewsByProductId,
-  getUnverifiedReviewsByProductId,
 }

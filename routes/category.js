@@ -8,7 +8,7 @@ router.get('/name/:name', controller.getCategoryByName)
 router.patch(
   '/name/:name',
   validateToken,
-  verifyRoles(['admin']),
+verifyRoles(['admin']),
   controller.updateCategory
 )
 router.delete('/:id', validateToken, verifyRoles(['admin']), controller.deleteCategory)
