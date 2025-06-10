@@ -36,35 +36,12 @@ const getAllReviews = async (req, res) => {
   }
 }
 
-const getAllVerifiedReviews = async (req, res) => {
-  try {
-    const reviews = await Review.find({ verified: true })
-      .populate('user', '-_id username email phone')
-      .populate('product', '-_id name slug')
-
-    res.status(200).json({ message: 'Verified reviews retrieved successfully', reviews })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getAllUnverifiedReviews = async (req, res) => {
-  try {
-    const reviews = await Review.find({ verified: false })
-      .populate('user', '-_id username email phone')
-      .populate('product', '-_id name slug')
-
-    res.status(200).json({ message: 'Unverified reviews retrieved successfully', reviews })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
 
 const getReviewById = async (req, res) => {
   try {
     const id = req.params.id
     const review = await Review.findById(id)
-      .populate('user', 'username email phone')
+      .populate('user', 'username email mobile')
       .populate('product', 'name slug')
     if (review == null) {
       return res.status(404).json({ message: 'Review not found' })
@@ -80,7 +57,7 @@ const getReviewByProductId = async (req, res) => {
   console.log('Product ID:', productId)
   try {
     const reviews = await Review.find({ product: productId })
-      .populate('user', 'username email phone')
+      .populate('user', 'username email mobile')
       .populate('product', 'name slug')
 
     res.status(200).json({ data: { message: 'Reviews retrieved successfully', reviews } })
@@ -93,7 +70,7 @@ const getReviewsByUserId = async (req, res) => {
   const userId = req.userId
   try {
     const reviews = await Review.find({ user: userId })
-      .populate('user', 'username email phone')
+      .populate('user', 'username email mobile')
       .populate('product', 'name slug')
     res.status(200).json({ data: { message: 'Reviews retrieved successfully', reviews } })
   } catch (err) {
@@ -111,7 +88,7 @@ const updateReview = async (req, res) => {
       { userId, productId, rating, comment, verified, title },
       { new: true }
     )
-      .populate('user', 'username email phone')
+      .populate('user', 'username email mobile')
       .populate('product', 'name slug')
     if (updatedReview == null) {
       return res.status(404).json({ message: 'Review not found' })
@@ -119,38 +96,6 @@ const updateReview = async (req, res) => {
     res.status(200).json({ message: 'Review updated successfully', updatedReview })
   } catch (err) {
     res.status(400).json({ message: err.message })
-  }
-}
-
-const verifyManyReviews = async (req, res) => {
-  try {
-    const { ids } = req.body
-    const updatedReviews = await Review.updateMany({ _id: { $in: ids } }, { verified: true })
-    res.status(200).json({ message: 'Reviews verified successfully', updatedReviews })
-  } catch (err) {
-    res.status(400).json({ message: err.message })
-  }
-}
-
-const getVerifiedReviewsByProductId = async (req, res) => {
-  try {
-    const reviews = await Review.find({ productId: req.params.productId, verified: true })
-      .populate('user', 'username email phone')
-      .populate('product', 'name slug')
-    res.status(200).json({ message: 'Verified reviews retrieved successfully', reviews })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getUnverifiedReviewsByProductId = async (req, res) => {
-  try {
-    const reviews = await Review.find({ productId: req.params.productId, verified: false })
-      .populate('user', 'username email phone')
-      .populate('product', 'name slug')
-    res.status(200).json({ message: 'Unverified reviews retrieved successfully', reviews })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
   }
 }
 

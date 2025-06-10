@@ -4,13 +4,16 @@ const schedule = require('node-schedule')
 const Order = require('../models/Order')
 
 const createOrder = async (req, res) => {
-  const { address, description, mobile, paymentMethod, cart, totalPrice } = req.body
+  const { address, description, mobile, paymentMethod, cart, totalPrice, totalDiscount } = req.body
   if (!address) {
     return res.status(400).json({ error: 'Address is required' })
   }
 
   const orderDate = moment().tz('Asia/Bangkok').toDate()
   const dueOrderDate = moment(orderDate).add(1, 'day').toDate()
+
+  //calculate final price based on total price and total discount
+  const finalAmount = totalPrice - totalDiscount
 
   try {
     const order = new Order({
@@ -21,7 +24,7 @@ const createOrder = async (req, res) => {
       description,
       mobile,
       totalAmount: totalPrice,
-      finalAmount: totalPrice,
+      finalAmount,
       paymentMethod: paymentMethod || 'Pay online',
     })
     await order.save()

@@ -11,12 +11,6 @@ const getPagination = (page, limit) => {
   return { skip, limitNumber }
 }
 
-const applySort = (a, b, sort) => {
-  if (sort === 'price-asc') return a.price - b.price
-  if (sort === 'price-desc') return b.price - a.price
-  return a.name.localeCompare(b.name)
-}
-
 const getAllProducts = async (req, res) => {
   const {
     page,
@@ -265,159 +259,11 @@ const deleteManyProducts = async (req, res) => {
   }
 }
 
-const getAllSizes = async (req, res) => {
-  try {
-    const sizes = await Product.distinct('sizes.size')
-    sizes.sort((a, b) => {
-      if (a.length < b.length) return -1
-      if (a.length > b.length) return 1
-      return a - b
-    })
-    res.status(200).json({ sizes })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getProductBySKU = async (req, res) => {
-  const { sku } = req.params
-  try {
-    const product = await Product.findOne({ sku }).populate('category')
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' })
-    }
-    res.status(200).json({ product })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getProductsByPriceRange = async (req, res) => {
-  const { min, max, page, limit, sort } = req.query
-  try {
-    const { skip, limitNumber } = getPagination(page, limit)
-    const products = await Product.find({ price: { $gte: min, $lte: max } })
-      .limit(limitNumber)
-      .skip(skip)
-
-    const totalPage = Math.ceil(
-      (await Product.countDocuments({ price: { $gte: min, $lte: max } })) / limit
-    )
-
-    res.status(200).json({ products: products.sort((a, b) => applySort(a, b, sort)), totalPage })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getRecentlyAddedProducts = async (req, res) => {
-  const { page, limit } = req.query
-  try {
-    const { skip, limitNumber } = getPagination(page, limit)
-    const products = await Product.find()
-      .sort({ createdAt: -1 })
-      .limit(limitNumber)
-      .skip(skip)
-      .populate('category')
-    res.status(200).json({ products })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getPopularProducts = async (req, res) => {
-  const { page, limit, productId } = req.query
-  try {
-    const { skip, limitNumber } = getPagination(page, limit)
-    const products = await Product.find({ _id: { $ne: productId } })
-      .sort({ sold: -1 })
-      .limit(limitNumber)
-      .skip(skip)
-      .populate('category')
-
-    const totalPage = Math.ceil((await Product.countDocuments({ _id: { $ne: productId } })) / limit)
-
-    res.status(200).json({ products, totalPage })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getRelatedProducts = async (req, res) => {
-  const { productId } = req.params
-  const { page, limit } = req.query
-  if (!productId) {
-    return res.status(400).json({ message: 'Product ID is required' })
-  }
-  try {
-    const { skip, limitNumber } = getPagination(page, limit)
-    const product = await Product.findById(productId)
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' })
-    }
-
-    const relatedProducts = await Product.find({
-      $or: [
-        { category: product.category },
-        { tags: { $in: product.tags } },
-        { collection: product.collection },
-      ],
-      _id: { $ne: productId },
-    })
-      .limit(limitNumber)
-      .skip(skip)
-      .sort({ sold: -1 })
-      .populate('category')
-
-    if (relatedProducts.length === 0) {
-      return res.status(404).json({ message: 'Related products not found' })
-    }
-
-    res.status(200).json({ products: relatedProducts })
-  } catch (err) {
-    console.log(err.message)
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getProductBySlug = async (req, res) => {
-  const { slug } = req.params
-  try {
-    const product = await Product.findOne({ slug }).populate('category')
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' })
-    }
-    res.status(200).json({ product })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-const getAllColors = async (req, res) => {
-  try {
-    const colors = await Product.distinct('colors.color')
-    if (!colors) {
-      return res.status(404).json({ message: 'Colors not found' })
-    }
-    res.status(200).json({ colors })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
 module.exports = {
   getAllProducts,
   getProductById,
   addProduct,
   updateProduct,
   deleteProduct,
-  getProductBySKU,
-  getProductsByPriceRange,
-  getRecentlyAddedProducts,
-  getPopularProducts,
   deleteManyProducts,
-  getProductBySlug,
-  getAllSizes,
-  getAllColors,
-  getRelatedProducts,
 }

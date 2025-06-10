@@ -50,7 +50,6 @@ const orderSchema = new mongoose.Schema({
       quantity: { type: Number },
     },
   ],
-  discountAmount: { type: Number, default: 0 },
   finalAmount: { type: Number, required: true },
   paymentStatus: {
     type: String,

@@ -1,9 +1,7 @@
 const argon2 = require('argon2')
 
 const { createToken } = require('../middlewares/VerifyJWT')
-const Customer = require('../models/Customer')
 const User = require('../models/User')
-// const sendEmail = require('../utils/sendEmail')
 
 const userLogin = async (req, res) => {
   try {
@@ -80,33 +78,6 @@ const userLogout = async (req, res) => {
   }
 }
 
-const resetPassword = async (req, res) => {
-  try {
-    const { oldPassword, password, repeatPassword } = req.body
-    if (password !== repeatPassword) {
-      return res.status(400).json({ message: 'Passwords do not match' })
-    }
-    const hashedPassword = await argon2.hash(password, 10)
-    const user = User.findById(req.userId)
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' })
-    }
-    if (!oldPassword) {
-      return res.status(400).json({ message: 'Old password is required' })
-    }
-    const match = await argon2.verify(user.password, oldPassword)
-    if (!match) {
-      return res.status(401).json({ message: 'Incorrect password' })
-    }
-    if (user.password === hashedPassword) {
-      return res.status(400).json({ message: 'New password is the same as the old password' })
-    }
-    await User.findByIdAndUpdate(req.userId, { password: hashedPassword })
-    res.status(200).json({ message: 'Password reset' })
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
 
 const getUser = async (req, res) => {
   try {
@@ -148,36 +119,6 @@ const updateUser = async (req, res) => {
     })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-const updatePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body
-    const user = await User.findById(req.userId)
-    const match = await argon2.verify(user.password, currentPassword)
-    if (!match) {
-      return res.status(401).json({ message: 'Incorrect password' })
-    }
-    const hashedPassword = await argon2.hash(newPassword, 10)
-    const updatedUser = await User.findByIdAndUpdate(
-      req.userId,
-      { password: hashedPassword },
-      { new: true }
-    )
-    res.status(200).json({
-      message: 'Password updated',
-      user: {
-        userId: user._id,
-        name: user.name,
-        email: user.email,
-        addresses: user.addresses,
-        phone: user.phone,
-        role: user.role,
-      },
-    })
-  } catch (err) {
     res.status(500).json({ message: 'Internal server error' })
   }
 }
@@ -224,65 +165,6 @@ const addAddress = async (req, res) => {
   }
 }
 
-const googleLogin = async (req, res) => {
-  try {
-    const { email, name, googleId } = req.body
-    let user = await User.findOne({ email })
-    if (!user) {
-      user = await User.create({
-        email,
-        name,
-        googleId,
-        role: 'user',
-        addresses: [],
-        phone: '',
-        password: '',
-      })
-    }
-    const accessToken = createToken({ userId: user._id, role: user.role })
-    res.cookie('access-token', accessToken, {
-      maxAge: 2592000000,
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    })
-    res.status(200).json({ message: 'Login success' })
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-const deleteAddress = async (req, res) => {
-  try {
-    const { addressId } = req.body
-    if (!addressId) return res.status(400).json({ message: 'Address id is required' })
-    const user = await User.findById(req.userId)
-    const index = user.addresses.findIndex(address => address._id == addressId)
-    if (index == -1) return res.status(404).json({ message: 'Address not found' })
-    if (user.addresses[index].isDefault && user.addresses.length > 1) {
-      user.addresses[!index ? 1 : 0].isDefault = true
-    }
-    user.addresses.splice(index, 1)
-    const updatedUser = await User.findByIdAndUpdate(
-      req.userId,
-      { addresses: user.addresses },
-      { new: true }
-    )
-    res.status(200).json({
-      message: 'Address deleted',
-      user: {
-        name: updatedUser.name,
-        email: updatedUser.email,
-        addresses: updatedUser.addresses,
-        phone: updatedUser.phone,
-        role: updatedUser.role,
-      },
-    })
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
 const updateRole = async (req, res) => {
   try {
     const { userId } = req.params
@@ -290,26 +172,6 @@ const updateRole = async (req, res) => {
     const user = await User.findByIdAndUpdate(userId, { role }, { new: true })
     res.status(200).json({
       message: 'Role updated',
-      user: {
-        userId: user._id,
-        name: user.name,
-        email: user.email,
-        addresses: user.addresses,
-        phone: user.phone,
-        role: user.role,
-      },
-    })
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-const deleteUser = async (req, res) => {
-  try {
-    const { userId } = req.params
-    const user = await User.findByIdAndUpdate(userId, { isActive: false }, { new: true })
-    res.status(200).json({
-      message: 'User deleted',
       user: {
         userId: user._id,
         name: user.name,
@@ -343,40 +205,16 @@ const getUserById = async (req, res) => {
   }
 }
 
-const getAllCustomers = async (req, res) => {
-  try {
-    const customers = await Customer.find()
-    res.status(200).json({ customers })
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-const getAllRoles = async (req, res) => {
-  try {
-    const roles = await User.distinct('role')
-    res.status(200).json({ roles })
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
 
 module.exports = {
   userLogin,
   userRegister,
   userLogout,
-  // forgotPassword,
-  resetPassword,
   getUser,
-  updatePassword,
-  googleLogin,
   updateUser,
-  deleteAddress,
   addAddress,
   updateRole,
-  deleteUser,
   getAllUsers,
   getUserById,
-  getAllCustomers,
-  getAllRoles,
+
 }
