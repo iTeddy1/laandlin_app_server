@@ -7,14 +7,9 @@ const { verifyRoles } = require('../middlewares/VerifyRoles')
 
 router.get('/user/:id', validateToken, orderController.getUserOrderById)
 router.get('/user', validateToken, orderController.getAllOrdersByUserId)
-router.get('/:id', validateToken, verifyRoles(['admin', 'manager']), orderController.getOrderById)
-router.patch(
-  '/:id/status',
-  validateToken,
-  verifyRoles(['admin', 'manager']),
-  orderController.updateOrderStatusById
-)
+router.get('/:id', validateToken, verifyRoles(['admin']), orderController.getOrderById)
+
 router.post('/', validateToken, orderController.createOrder)
-router.get('/', validateToken, verifyRoles(['admin', 'manager']), orderController.getAllOrders)
+router.get('/', validateToken, verifyRoles(['admin']), orderController.getAllOrders)
 
 module.exports = router
